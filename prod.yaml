@@ -1,0 +1,68 @@
+version: "2.1"
+services:
+    odoo:
+        extends:
+            file: common.yaml
+            service: odoo
+        restart: unless-stopped
+        depends_on:
+            - db
+            - smtp
+            - inbox
+        networks:
+            default:
+            inverseproxy_shared:
+        labels:
+            traefik.dbmanager.frontend.auth.basic:
+                "${DB_USER}:${ODOO_ADMIN_PASSWORD_BCRYPT}"
+            traefik.dbmanager.frontend.rule:
+                "Host:${DOMAIN_PROD};PathPrefix:/web/database/"
+            traefik.dbselector.frontend.rule:
+                "Host:${DOMAIN_PROD};PathPrefix:/web/database/{p:selector|list}"
+            traefik.longpolling.frontend.rule:
+                "Host:${DOMAIN_PROD};PathPrefix:/longpolling/"
+            traefik.websiteinfo.frontend.auth.basic:
+                "${DB_USER}:${ODOO_ADMIN_PASSWORD_BCRYPT}"
+            traefik.websiteinfo.frontend.rule:
+                "Host:${DOMAIN_PROD};Path:/website/info"
+            traefik.www.frontend.rule: "Host:${DOMAIN_PROD}"
+
+    db:
+        extends:
+            file: common.yaml
+            service: db
+        restart: unless-stopped
+
+    inbox:
+        extends:
+            file: common.yaml
+            service: inboxreal
+        restart: unless-stopped
+
+    smtp:
+        extends:
+            file: common.yaml
+            service: smtpreal
+        restart: unless-stopped
+
+    backup:
+        extends:
+            file: common.yaml
+            service: backup
+        restart: unless-stopped
+        depends_on:
+            - db
+            - smtp
+
+networks:
+    default:
+        driver_opts:
+            encrypted: 1
+
+    inverseproxy_shared:
+        external: true
+
+volumes:
+    filestore:
+    db:
+    smtp:

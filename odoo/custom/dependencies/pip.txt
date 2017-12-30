@@ -1,0 +1,5 @@
+checksumdir
+unicodecsv
+unidecode
+requests
+xlsxwriter

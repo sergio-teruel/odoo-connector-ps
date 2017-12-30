@@ -1,0 +1,75 @@
+version: "2.1"
+services:
+    odoo:
+        build:
+            context: ./odoo
+            args:
+                CONFIG_BUILD: "false"
+        environment:
+            ADMIN_PASSWORD: "$ODOO_ADMIN_PASSWORD"
+            PGPASSWORD: "$DB_PASSWORD"
+            PGUSER: "$DB_USER"
+            PROXY_MODE: "$ODOO_PROXY_MODE"
+            PYTHONOPTIMIZE: 2
+        tty: true
+        volumes:
+            - filestore:/var/lib/odoo:z
+        labels:
+            traefik.docker.network: "inverseproxy_shared"
+            traefik.enable: "true"
+            traefik.frontend.passHostHeader: "true"
+            traefik.longpolling.port: "8072"
+            traefik.port: "8069"
+
+    db:
+        image: postgres:${DB_VERSION}-alpine
+        environment:
+            POSTGRES_USER: "$DB_USER"
+            POSTGRES_PASSWORD: "$DB_PASSWORD"
+        volumes:
+            - db:/var/lib/postgresql/data:z
+
+    smtpfake:
+        image: tecnativa/smtp-sink
+
+    smtpreal:
+        image: tecnativa/postfix-relay
+        volumes:
+            - smtp:/var/spool/postfix
+        environment:
+            MAILNAME: "$SMTP_REAL_MAILNAME"
+            MAIL_RELAY_HOST: "$SMTP_REAL_RELAY_HOST"
+            MAIL_RELAY_PORT: "$SMTP_REAL_RELAY_PORT"
+            MAIL_RELAY_USER: "$SMTP_REAL_RELAY_USER"
+            MAIL_RELAY_PASS: "$SMTP_REAL_RELAY_PASS"
+            MAIL_CANONICAL_DOMAINS: "$SMTP_REAL_CANONICAL_DOMAINS"
+            MAIL_NON_CANONICAL_DEFAULT: "$SMTP_REAL_NON_CANONICAL_DEFAULT"
+
+    inboxfake:
+        image: tecnativa/tcp-proxy
+        environment:
+            LISTEN: "$INBOX_FAKE_LISTEN"
+            TALK: "$INBOX_FAKE_TALK"
+
+    inboxreal:
+        image: tecnativa/tcp-proxy
+        environment:
+            LISTEN: "$INBOX_REAL_LISTEN"
+            TALK: "$INBOX_REAL_TALK"
+
+    backup:
+        image: tecnativa/duplicity:postgres-s3
+        hostname: backup
+        domainname: "$DOMAIN_PROD"
+        environment:
+            AWS_ACCESS_KEY_ID: "$BACKUP_S3_ACCESS_KEY"
+            AWS_SECRET_ACCESS_KEY: "$BACKUP_S3_SECRET_KEY"
+            DST: "s3://s3.amazonaws.com/$BACKUP_S3_BUCKET"
+            EMAIL_FROM: "$BACKUP_EMAIL_FROM"
+            EMAIL_TO: "$BACKUP_EMAIL_TO"
+            PASSPHRASE: "$BACKUP_ENCRYPT_KEY"
+            PGDATABASE: prod
+            PGPASSWORD: "$DB_PASSWORD"
+            PGUSER: "$DB_USER"
+        volumes:
+            - filestore:/mnt/backup/src/odoo:z

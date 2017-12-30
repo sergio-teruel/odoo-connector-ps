@@ -1,0 +1,62 @@
+version: "2.1"
+services:
+    odoo:
+        extends:
+            file: common.yaml
+            service: odoo
+        environment:
+            PGDATABASE: test
+            # You may want demo data for testing
+            WITHOUT_DEMO: "false"
+        depends_on:
+            - db
+            - smtp
+            - inbox
+        networks:
+            default:
+            inverseproxy_shared:
+        labels:
+            traefik.dbmanager.frontend.auth.basic:
+                "${DB_USER}:${ODOO_ADMIN_PASSWORD_BCRYPT}"
+            traefik.dbmanager.frontend.rule:
+                "Host:${DOMAIN_TEST};PathPrefix:/web/database/"
+            traefik.dbselector.frontend.rule:
+                "Host:${DOMAIN_TEST};PathPrefix:/web/database/{p:selector|list}"
+            traefik.longpolling.frontend.rule:
+                "Host:${DOMAIN_TEST};PathPrefix:/longpolling/"
+            traefik.websiteinfo.frontend.auth.basic:
+                "${DB_USER}:${ODOO_ADMIN_PASSWORD_BCRYPT}"
+            traefik.websiteinfo.frontend.rule:
+                "Host:${DOMAIN_TEST};Path:/website/info"
+            traefik.www.frontend.rule: "Host:${DOMAIN_TEST}"
+        command:
+            - odoo
+            - --workers=2
+            - --max-cron-threads=1
+
+    db:
+        extends:
+            file: common.yaml
+            service: db
+
+    inbox:
+        extends:
+            file: common.yaml
+            service: inboxfake
+
+    smtp:
+        extends:
+            file: common.yaml
+            service: smtpfake
+
+networks:
+    default:
+        driver_opts:
+            encrypted: 1
+
+    inverseproxy_shared:
+        external: true
+
+volumes:
+    filestore:
+    db:
