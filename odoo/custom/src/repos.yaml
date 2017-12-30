@@ -8,7 +8,6 @@
     remotes:
         ocb: https://github.com/OCA/OCB.git
         odoo: https://github.com/odoo/odoo.git
-        openupgrade: https://github.com/OCA/OpenUpgrade.git
     target:
         ocb $ODOO_VERSION
     merges:
@@ -22,6 +21,36 @@
         depth: $DEPTH_DEFAULT
     remotes:
         oca: https://github.com/OCA/l10n-spain.git
+    target:
+        oca $ODOO_VERSION
+    merges:
+        - oca $ODOO_VERSION
+
+./connector-prestashop:
+    defaults:
+        depth: $DEPTH_MERGE
+    remotes:
+        oca: https://github.com/OCA/connector-prestashop.git
+    target:
+        oca $ODOO_VERSION
+    merges:
+        - oca $ODOO_VERSION
+
+./e-commerce:
+    defaults:
+        depth: $DEPTH_DEFAULT
+    remotes:
+        oca: https://github.com/OCA/e-commerce.git
+    target:
+        oca $ODOO_VERSION
+    merges:
+        - oca $ODOO_VERSION
+
+./sale-workflow:
+    defaults:
+        depth: $DEPTH_DEFAULT
+    remotes:
+        oca: https://github.com/OCA/sale-workflow.git
     target:
         oca $ODOO_VERSION
     merges:
